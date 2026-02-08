@@ -9,6 +9,8 @@ import { TitleScreen } from '../screens/TitleScreen.js';
 import { GameOverScreen } from '../screens/GameOverScreen.js';
 import { STORIES } from '../data/cutscenes.js';
 import { Owlie } from '../entities/Owlie.js';
+import { HUD } from '../ui/HUD.js';
+import { DamageNumber } from '../entities/DamageNumber.js';
 
 export const GameState = {
     TITLE: 'title',
@@ -36,9 +38,13 @@ export class Game {
         this.cutsceneManager = new CutsceneManager(this.renderer);
         this.transitionManager = new TransitionManager();
 
-        // Screens
+        // Screens & UI
         this.titleScreen = new TitleScreen();
         this.gameOverScreen = null;
+        this.hud = new HUD();
+        this.damageNumbers = [];
+        this.wave = 1;
+        this.combo = 0;
 
         // Enhanced parallax stars — 3 layers with twinkling
         const starSymbols = ['.', '.', '.', '.', '*', '+', '~', ':'];
@@ -85,6 +91,9 @@ export class Game {
         this.spawnTimer = 0;
         this.shootTimer = 0;
         this.shakeAmount = 0;
+        this.damageNumbers = [];
+        this.wave = 1;
+        this.combo = 0;
 
         const startX = window.innerWidth / 2 - 30;
         const startY = window.innerHeight / 2 - 20;
@@ -180,6 +189,9 @@ export class Game {
 
         this.projectiles = this.projectiles.filter(p => { p.update(dt); return p.life > 0; });
         this.particles = this.particles.filter(p => { p.update(dt); return p.life > 0; });
+        this.damageNumbers = this.damageNumbers.filter(d => { d.update(dt); return d.alive; });
+
+        this.hud.update(dt, this.combo);
 
         this.shakeAmount *= 0.9;
         if (this.shakeAmount < 0.1) this.shakeAmount = 0;
@@ -219,12 +231,14 @@ export class Game {
                 const dist = Math.sqrt(Math.pow(p.x - e.x, 2) + Math.pow(p.y - e.y, 2));
                 if (dist < 20) {
                     e.health -= p.damage;
+                    this.damageNumbers.push(new DamageNumber(e.x, e.y, p.damage, '#ffff33'));
                     this.projectiles.splice(pi, 1);
                     if (e.health <= 0) {
                         this.createExplosion(e.x, e.y, e.color);
                         this.enemies.splice(ei, 1);
                         this.score += 10;
                         this.enemiesKilled++;
+                        this.combo++;
                     }
                     break;
                 }
@@ -309,11 +323,11 @@ export class Game {
         this.enemies.forEach(e => this.renderer.drawEntity(e));
         this.projectiles.forEach(p => this.renderer.drawEntity(p));
         this.particles.forEach(p => this.renderer.drawEntity(p));
+        this.damageNumbers.forEach(d => d.draw(this.renderer));
 
         // Draw HUD
         if (this.owlie) {
-            this.renderer.drawText(`HP: ${Math.max(0, Math.ceil(this.owlie.health))}%  SCORE: ${this.score}`, 2, 1, '#ff3333');
-            this.renderer.drawText(`[ AERO OWLIE ]`, Math.floor(this.renderer.cols / 2) - 7, 1, '#33ff33', true);
+            this.hud.draw(this.renderer, this.owlie.health, this.score, this.wave, this.combo);
         }
 
         if (this.shakeAmount > 0) {
