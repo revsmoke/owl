@@ -5,7 +5,7 @@ export class DamageNumber {
     constructor(x, y, amount, color = '#ffffff') {
         this.x = x;
         this.y = y;
-        this.text = `-${amount}`;
+        this.text = typeof amount === 'string' ? amount : `-${amount}`;
         this.color = color;
         this.life = 0.8;
         this.maxLife = 0.8;
