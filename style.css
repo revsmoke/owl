@@ -1,0 +1,95 @@
+:root {
+    --bg-color: #0d0d0d;
+    --text-color: #33ff33;
+    --accent-color: #ff33ff;
+    --glow-color: rgba(51, 255, 51, 0.5);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Fira Code', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+/* CRT scanline overlay */
+#game-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+    ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.06),
+        rgba(0, 255, 0, 0.02),
+        rgba(0, 0, 255, 0.06)
+    );
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Vignette overlay */
+#game-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 60%,
+        rgba(0, 0, 0, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 3;
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.glow {
+    text-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color);
+}

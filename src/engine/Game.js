@@ -234,7 +234,7 @@ export class Game {
                     this.damageNumbers.push(new DamageNumber(e.x, e.y, p.damage, '#ffff33'));
                     this.projectiles.splice(pi, 1);
                     if (e.health <= 0) {
-                        this.createExplosion(e.x, e.y, e.color);
+                        this.createExplosion(e.x, e.y, e.color, e);
                         this.enemies.splice(ei, 1);
                         this.score += 10;
                         this.enemiesKilled++;
@@ -265,8 +265,18 @@ export class Game {
         this.cutsceneManager.play(randomStory(this.score));
     }
 
-    createExplosion(x, y, color) {
-        for (let i = 0; i < 8; i++) {
+    createExplosion(x, y, color, entity = null) {
+        // Dissolve enemy sprite into particles if entity provided
+        if (entity) {
+            const dissolveParticles = Particle.createDissolve(entity);
+            this.particles.push(...dissolveParticles);
+        }
+        // Add spark particles
+        for (let i = 0; i < 6; i++) {
+            this.particles.push(new Particle(x, y, color, 'spark'));
+        }
+        // Add explosion particles
+        for (let i = 0; i < 4; i++) {
             this.particles.push(new Particle(x, y, color));
         }
     }
@@ -321,7 +331,10 @@ export class Game {
 
         this.entities.forEach(e => this.renderer.drawEntity(e));
         this.enemies.forEach(e => this.renderer.drawEntity(e));
-        this.projectiles.forEach(p => this.renderer.drawEntity(p));
+        this.projectiles.forEach(p => {
+            p.drawTrail(this.renderer);
+            this.renderer.drawEntity(p);
+        });
         this.particles.forEach(p => this.renderer.drawEntity(p));
         this.damageNumbers.forEach(d => d.draw(this.renderer));
 
