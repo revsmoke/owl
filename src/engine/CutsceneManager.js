@@ -245,6 +245,24 @@ export class CutsceneManager {
     }
 
     /**
+     * Skip to the 'end' action, terminating the cutscene immediately.
+     */
+    skipToEnd() {
+        if (!this.isActive) return;
+        this.waitingForConditions = null;
+        for (let i = this.stepIndex; i < this.currentScript.length; i++) {
+            if (this.currentScript[i].type === 'end') {
+                this.stepIndex = i;
+                this.stepTimer = 0;
+                this.nextStep();
+                return;
+            }
+        }
+        // No end step found — force stop
+        this.isActive = false;
+    }
+
+    /**
      * Execute an action within a parallel block.
      * Returns a completion check function, or null if instant.
      */

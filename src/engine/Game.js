@@ -173,6 +173,10 @@ export class Game {
 
             case GameState.CUTSCENE:
                 this.cutsceneManager.update(dt);
+                if (this.input.anyKey) {
+                    this.input.clearAnyKey();
+                    this.cutsceneManager.skipToEnd();
+                }
                 if (!this.cutsceneManager.isActive) {
                     this.gameOverScreen = new GameOverScreen(this.score, this.enemiesKilled);
                     this.state = GameState.GAMEOVER;
@@ -282,6 +286,8 @@ export class Game {
     }
 
     fireProjectile() {
+        if (this.enemies.length === 0) return;
+
         // Fire towards nearest enemy
         let nearest = this.enemies[0];
         let nearDist = Infinity;
@@ -293,6 +299,7 @@ export class Game {
         const dx = nearest.x - this.owlie.x;
         const dy = nearest.y - this.owlie.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 1) return; // Prevent division by zero
 
         const proj = new Projectile(this.owlie.x + 30, this.owlie.y + 20, dx / dist, dy / dist);
         this.projectiles.push(proj);
@@ -318,14 +325,14 @@ export class Game {
             }
         }
 
-        // Enemy -> Owlie
-        this.enemies.forEach(e => {
+        // Enemy -> Owlie (break after first hit per frame)
+        for (const e of this.enemies) {
             const dist = Math.sqrt(Math.pow(this.owlie.x - e.x, 2) + Math.pow(this.owlie.y - e.y, 2));
             if (dist < 30) {
                 if (this.shieldActive) {
                     this.shieldActive = false;
                     this.createExplosion(e.x, e.y, '#3399ff');
-                    return;
+                    break;
                 }
                 if (this.owlie.takeDamage(e.isBoss ? 15 : 5)) {
                     this.shakeAmount = 3;
@@ -333,8 +340,9 @@ export class Game {
                         this.triggerDeath();
                     }
                 }
+                break;
             }
-        });
+        }
 
         // PowerUp -> Owlie
         for (let i = this.powerUps.length - 1; i >= 0; i--) {
@@ -429,9 +437,9 @@ export class Game {
             this.particles.push(new Particle(x, y, color));
         }
 
-        // Cap particles at 200
+        // Cap particles at 200 (in-place trim to avoid allocation churn)
         if (this.particles.length > 200) {
-            this.particles = this.particles.slice(-200);
+            this.particles.splice(0, this.particles.length - 200);
         }
     }
 
