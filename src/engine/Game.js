@@ -14,6 +14,7 @@ import { STORIES } from '../data/cutscenes.js';
 import { Owlie } from '../entities/Owlie.js';
 import { HUD } from '../ui/HUD.js';
 import { DamageNumber } from '../entities/DamageNumber.js';
+import { TouchControls } from '../ui/TouchControls.js';
 
 export const GameState = {
     TITLE: 'title',
@@ -47,6 +48,7 @@ export class Game {
         this.titleScreen = new TitleScreen();
         this.gameOverScreen = null;
         this.hud = new HUD();
+        this.touchControls = new TouchControls();
         this.damageNumbers = [];
 
         // Wave intro state
@@ -522,6 +524,9 @@ export class Game {
         if (this.owlie) {
             this.hud.draw(this.renderer, this.owlie.health, this.score, this.waveManager.wave, this.comboTracker.count);
         }
+
+        // Touch controls overlay
+        this.touchControls.draw(this.renderer, this.input.getAxis());
 
         if (this.shakeAmount > 0) {
             this.renderer.ctx.restore();
