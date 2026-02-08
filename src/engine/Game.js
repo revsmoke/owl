@@ -4,10 +4,16 @@ import { Enemy } from '../entities/Enemy.js';
 import { Projectile } from '../entities/Projectile.js';
 import { Particle } from '../entities/Particle.js';
 import { CutsceneManager } from './CutsceneManager.js';
+import { TransitionManager } from './TransitionManager.js';
+import { TitleScreen } from '../screens/TitleScreen.js';
+import { GameOverScreen } from '../screens/GameOverScreen.js';
 import { STORIES } from '../data/cutscenes.js';
+import { Owlie } from '../entities/Owlie.js';
 
 export const GameState = {
+    TITLE: 'title',
     PLAYING: 'playing',
+    WAVE_INTRO: 'wave_intro',
     CUTSCENE: 'cutscene',
     GAMEOVER: 'gameover'
 };
@@ -25,8 +31,14 @@ export class Game {
         this.spawnTimer = 0;
         this.shootTimer = 0;
         this.score = 0;
-        this.state = GameState.PLAYING;
+        this.enemiesKilled = 0;
+        this.state = GameState.TITLE;
         this.cutsceneManager = new CutsceneManager(this.renderer);
+        this.transitionManager = new TransitionManager();
+
+        // Screens
+        this.titleScreen = new TitleScreen();
+        this.gameOverScreen = null;
 
         // Enhanced parallax stars — 3 layers with twinkling
         const starSymbols = ['.', '.', '.', '.', '*', '+', '~', ':'];
@@ -63,8 +75,25 @@ export class Game {
         return entity;
     }
 
+    _startGameplay() {
+        this.entities = [];
+        this.enemies = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.score = 0;
+        this.enemiesKilled = 0;
+        this.spawnTimer = 0;
+        this.shootTimer = 0;
+        this.shakeAmount = 0;
+
+        const startX = window.innerWidth / 2 - 30;
+        const startY = window.innerHeight / 2 - 20;
+        this.owlie = new Owlie(startX, startY);
+        this.addEntity(this.owlie);
+    }
+
     loop(timestamp) {
-        const dt = (timestamp - this.lastTime) / 1000;
+        const dt = Math.min((timestamp - this.lastTime) / 1000, 0.05); // Cap dt
         this.lastTime = timestamp;
 
         this.update(dt);
@@ -74,21 +103,56 @@ export class Game {
     }
 
     update(dt) {
-        if (this.state === GameState.CUTSCENE) {
-            this.cutsceneManager.update(dt);
-            if (!this.cutsceneManager.isActive) {
-                this.state = GameState.GAMEOVER;
+        // Always update stars and transitions
+        this.gameTime += dt;
+        this.stars.forEach(s => {
+            s.y += s.speed * dt * 50;
+            if (s.y > this.renderer.rows) {
+                s.y = -1;
+                s.x = Math.random() * this.renderer.cols;
             }
-            return;
-        }
+        });
+        this.transitionManager.update(dt);
 
-        if (this.state === GameState.GAMEOVER) {
-            if (this.input.anyKey) {
-                window.location.reload();
-            }
-            return;
-        }
+        switch (this.state) {
+            case GameState.TITLE:
+                this.titleScreen.update(dt);
+                if (this.input.anyKey && !this.transitionManager.isTransitioning) {
+                    this.input.clearAnyKey();
+                    this.transitionManager.fadeTransition(1.0, () => {
+                        this._startGameplay();
+                        this.state = GameState.PLAYING;
+                    });
+                }
+                break;
 
+            case GameState.PLAYING:
+                this._updatePlaying(dt);
+                break;
+
+            case GameState.CUTSCENE:
+                this.cutsceneManager.update(dt);
+                if (!this.cutsceneManager.isActive) {
+                    this.gameOverScreen = new GameOverScreen(this.score, this.enemiesKilled);
+                    this.state = GameState.GAMEOVER;
+                    this.input.clearAnyKey();
+                }
+                break;
+
+            case GameState.GAMEOVER:
+                this.gameOverScreen.update(dt);
+                if (this.input.anyKey && !this.transitionManager.isTransitioning) {
+                    this.input.clearAnyKey();
+                    this.transitionManager.fadeTransition(1.0, () => {
+                        this._startGameplay();
+                        this.state = GameState.PLAYING;
+                    });
+                }
+                break;
+        }
+    }
+
+    _updatePlaying(dt) {
         const axis = this.input.getAxis();
 
         // Spawn enemies
@@ -98,7 +162,7 @@ export class Game {
             this.spawnTimer = 0;
         }
 
-        // Shooting logic (automatic hooting at nearest enemy or movement direction)
+        // Shooting logic
         this.shootTimer += dt;
         if (this.shootTimer > 0.5 && this.enemies.length > 0) {
             this.fireProjectile();
@@ -114,26 +178,10 @@ export class Game {
             e.update(dt, { x: this.owlie.x, y: this.owlie.y });
         });
 
-        this.projectiles.forEach((p, i) => {
-            p.update(dt);
-            if (p.life <= 0) this.projectiles.splice(i, 1);
-        });
+        this.projectiles = this.projectiles.filter(p => { p.update(dt); return p.life > 0; });
+        this.particles = this.particles.filter(p => { p.update(dt); return p.life > 0; });
 
-        this.particles.forEach((p, i) => {
-            p.update(dt);
-            if (p.life <= 0) this.particles.splice(i, 1);
-        });
-
-        this.gameTime += dt;
-        this.stars.forEach(s => {
-            s.y += s.speed * dt * 50;
-            if (s.y > this.renderer.rows) {
-                s.y = -1;
-                s.x = Math.random() * this.renderer.cols;
-            }
-        });
-
-        this.shakeAmount *= 0.9; // Decay shake
+        this.shakeAmount *= 0.9;
         if (this.shakeAmount < 0.1) this.shakeAmount = 0;
 
         this.checkCollisions();
@@ -153,7 +201,6 @@ export class Game {
     }
 
     fireProjectile() {
-        // Simple: fire towards nearest enemy
         const target = this.enemies[0];
         const dx = target.x - this.owlie.x;
         const dy = target.y - this.owlie.y;
@@ -164,9 +211,11 @@ export class Game {
     }
 
     checkCollisions() {
-        // Projectile -> Enemy
-        this.projectiles.forEach((p, pi) => {
-            this.enemies.forEach((e, ei) => {
+        // Projectile -> Enemy (iterate backwards to avoid splice issues)
+        for (let pi = this.projectiles.length - 1; pi >= 0; pi--) {
+            const p = this.projectiles[pi];
+            for (let ei = this.enemies.length - 1; ei >= 0; ei--) {
+                const e = this.enemies[ei];
                 const dist = Math.sqrt(Math.pow(p.x - e.x, 2) + Math.pow(p.y - e.y, 2));
                 if (dist < 20) {
                     e.health -= p.damage;
@@ -175,13 +224,15 @@ export class Game {
                         this.createExplosion(e.x, e.y, e.color);
                         this.enemies.splice(ei, 1);
                         this.score += 10;
+                        this.enemiesKilled++;
                     }
+                    break;
                 }
-            });
-        });
+            }
+        }
 
         // Enemy -> Owlie
-        this.enemies.forEach((e, ei) => {
+        this.enemies.forEach(e => {
             const dist = Math.sqrt(Math.pow(this.owlie.x - e.x, 2) + Math.pow(this.owlie.y - e.y, 2));
             if (dist < 30) {
                 if (this.owlie.takeDamage(5)) {
@@ -209,20 +260,33 @@ export class Game {
     draw() {
         this.renderer.clear();
 
-        if (this.state === GameState.CUTSCENE) {
-            this.cutsceneManager.draw();
-            return;
+        // Draw starfield (shared across all states)
+        this._drawStars();
+
+        switch (this.state) {
+            case GameState.TITLE:
+                this.titleScreen.draw(this.renderer);
+                break;
+
+            case GameState.CUTSCENE:
+                this.cutsceneManager.draw();
+                break;
+
+            case GameState.PLAYING:
+            case GameState.WAVE_INTRO:
+                this._drawGameplay();
+                break;
+
+            case GameState.GAMEOVER:
+                this.gameOverScreen.draw(this.renderer);
+                break;
         }
 
-        // Apply screenshake
-        if (this.shakeAmount > 0) {
-            const dx = (Math.random() - 0.5) * this.shakeAmount;
-            const dy = (Math.random() - 0.5) * this.shakeAmount;
-            this.renderer.ctx.save();
-            this.renderer.ctx.translate(dx, dy);
-        }
+        // Transitions always render last
+        this.transitionManager.draw(this.renderer.ctx, window.innerWidth, window.innerHeight);
+    }
 
-        // Draw parallax stars with twinkling
+    _drawStars() {
         this.stars.forEach(s => {
             const brightness = s.baseBright + (1 - s.baseBright) * (0.3 + 0.7 * Math.sin(this.gameTime * s.twinkleSpeed + s.twinkleOffset));
             const v = Math.round(brightness * 136);
@@ -230,6 +294,16 @@ export class Game {
             const color = `#${hex}${hex}${hex}`;
             this.renderer.drawText(s.symbol, s.x % this.renderer.cols, s.y, color);
         });
+    }
+
+    _drawGameplay() {
+        // Apply screenshake
+        if (this.shakeAmount > 0) {
+            const dx = (Math.random() - 0.5) * this.shakeAmount;
+            const dy = (Math.random() - 0.5) * this.shakeAmount;
+            this.renderer.ctx.save();
+            this.renderer.ctx.translate(dx, dy);
+        }
 
         this.entities.forEach(e => this.renderer.drawEntity(e));
         this.enemies.forEach(e => this.renderer.drawEntity(e));
@@ -244,12 +318,6 @@ export class Game {
 
         if (this.shakeAmount > 0) {
             this.renderer.ctx.restore();
-        }
-
-        if (this.state === GameState.GAMEOVER) {
-            this.renderer.drawText(`G A M E   O V E R`, Math.floor(this.renderer.cols / 2) - 8, Math.floor(this.renderer.rows / 2), '#ff0000', true);
-            this.renderer.drawText(`FINAL SCORE: ${this.score}`, Math.floor(this.renderer.cols / 2) - 10, Math.floor(this.renderer.rows / 2) + 2, '#ffffff');
-            this.renderer.drawText(`PRESS ANY KEY TO RESTART`, Math.floor(this.renderer.cols / 2) - 12, Math.floor(this.renderer.rows / 2) + 4, '#33ff33');
         }
     }
 }
