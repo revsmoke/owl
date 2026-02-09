@@ -20,6 +20,7 @@ export const GameState = {
     TITLE: 'title',
     PLAYING: 'playing',
     WAVE_INTRO: 'wave_intro',
+    DEAD: 'dead',
     CUTSCENE: 'cutscene',
     GAMEOVER: 'gameover'
 };
@@ -87,6 +88,7 @@ export class Game {
         this.gameTime = 0;
 
         this.shakeAmount = 0;
+        this.stateTimer = 0;
     }
 
     start() {
@@ -120,6 +122,7 @@ export class Game {
 
         // Start wave 1 intro
         this.waveManager = new WaveManager();
+        this.stateTimer = 0;
         this._startWaveIntro(1);
     }
 
@@ -171,22 +174,44 @@ export class Game {
                 this._updatePlaying(dt);
                 break;
 
+            case GameState.DEAD:
+                this.stateTimer += dt;
+                // Maintain particle/entity updates for a brief moment
+                this._updatePlaying(dt, true);
+                if (this.stateTimer >= 0.8) {
+                    this.state = GameState.CUTSCENE;
+                    this.stateTimer = 0;
+                    const randomStory = STORIES[Math.floor(Math.random() * STORIES.length)];
+                    this.cutsceneManager.play(randomStory(this.score));
+                }
+                break;
+
             case GameState.CUTSCENE:
                 this.cutsceneManager.update(dt);
-                if (this.input.anyKey) {
+                this.stateTimer += dt;
+
+                // 0.5s lockout before skip is allowed
+                if (this.input.anyKey && this.stateTimer > 0.5) {
                     this.input.clearAnyKey();
                     this.cutsceneManager.skipToEnd();
                 }
-                if (!this.cutsceneManager.isActive) {
-                    this.gameOverScreen = new GameOverScreen(this.score, this.enemiesKilled);
-                    this.state = GameState.GAMEOVER;
-                    this.input.clearAnyKey();
+
+                if (!this.cutsceneManager.isActive && !this.transitionManager.isTransitioning) {
+                    this.transitionManager.fadeTransition(1.0, () => {
+                        this.gameOverScreen = new GameOverScreen(this.score, this.enemiesKilled);
+                        this.state = GameState.GAMEOVER;
+                        this.stateTimer = 0;
+                        this.input.clearAnyKey();
+                    });
                 }
                 break;
 
             case GameState.GAMEOVER:
                 this.gameOverScreen.update(dt);
-                if (this.input.anyKey && !this.transitionManager.isTransitioning) {
+                this.stateTimer += dt;
+
+                // 1.0s lockout before restart is allowed
+                if (this.input.anyKey && this.stateTimer > 1.0 && !this.transitionManager.isTransitioning) {
                     this.input.clearAnyKey();
                     this.transitionManager.fadeTransition(1.0, () => {
                         this._startGameplay();
@@ -217,35 +242,38 @@ export class Game {
         }
     }
 
-    _updatePlaying(dt) {
-        const axis = this.input.getAxis();
+    _updatePlaying(dt, isLocked = false) {
+        const axis = isLocked ? { x: 0, y: 0 } : this.input.getAxis();
 
-        // Wave-based enemy spawning
-        const spawnType = this.waveManager.update(dt);
-        if (spawnType) {
-            this.spawnEnemy(spawnType);
-        }
-
-        // Check wave completion
-        if (this.waveManager.waveComplete) {
-            this.betweenWaveTimer += dt;
-            if (this.betweenWaveTimer >= 3.0) {
-                this.betweenWaveTimer = 0;
-                this._startWaveIntro(this.waveManager.wave + 1);
-                return;
+        // Skip spawning and timers if dead
+        if (!isLocked) {
+            // Wave-based enemy spawning
+            const spawnType = this.waveManager.update(dt);
+            if (spawnType) {
+                this.spawnEnemy(spawnType);
             }
-        }
 
-        // Shooting logic
-        const fireRate = this.rapidFireTimer > 0 ? 0.25 : 0.5;
-        this.shootTimer += dt;
-        if (this.shootTimer > fireRate && this.enemies.length > 0) {
-            this.fireProjectile();
-            this.shootTimer = 0;
-        }
+            // Check wave completion
+            if (this.waveManager.waveComplete) {
+                this.betweenWaveTimer += dt;
+                if (this.betweenWaveTimer >= 3.0) {
+                    this.betweenWaveTimer = 0;
+                    this._startWaveIntro(this.waveManager.wave + 1);
+                    return;
+                }
+            }
 
-        // Power-up effect timers
-        if (this.rapidFireTimer > 0) this.rapidFireTimer -= dt;
+            // Shooting logic
+            const fireRate = this.rapidFireTimer > 0 ? 0.25 : 0.5;
+            this.shootTimer += dt;
+            if (this.shootTimer > fireRate && this.enemies.length > 0) {
+                this.fireProjectile();
+                this.shootTimer = 0;
+            }
+
+            // Power-up effect timers
+            if (this.rapidFireTimer > 0) this.rapidFireTimer -= dt;
+        }
 
         // Update all
         this.entities.forEach(e => {
@@ -267,7 +295,9 @@ export class Game {
         this.shakeAmount *= 0.9;
         if (this.shakeAmount < 0.1) this.shakeAmount = 0;
 
-        this.checkCollisions();
+        if (!isLocked) {
+            this.checkCollisions();
+        }
     }
 
     spawnEnemy(type = null) {
@@ -420,9 +450,8 @@ export class Game {
     }
 
     triggerDeath() {
-        this.state = GameState.CUTSCENE;
-        const randomStory = STORIES[Math.floor(Math.random() * STORIES.length)];
-        this.cutsceneManager.play(randomStory(this.score));
+        this.state = GameState.DEAD;
+        this.stateTimer = 0;
     }
 
     createExplosion(x, y, color, entity = null) {
@@ -456,9 +485,12 @@ export class Game {
                 this.cutsceneManager.draw();
                 break;
 
+            case GameState.DEAD:
             case GameState.WAVE_INTRO:
                 this._drawGameplay();
-                this._drawWaveAnnounce();
+                if (this.state === GameState.WAVE_INTRO) {
+                    this._drawWaveAnnounce();
+                }
                 break;
 
             case GameState.PLAYING:
