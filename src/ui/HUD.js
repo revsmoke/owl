@@ -71,7 +71,8 @@ export class HUD {
         const text = `x${display} COMBO!`;
         const boxWidth = text.length + 4;
         const boxX = renderer.cols - boxWidth - 1;
-        const boxY = 3;
+        // Move below score box (score box height is 3, ends at y=3)
+        const boxY = 4;
 
         if (display >= 5) {
             renderer.drawTextRainbow(text, boxX + 2, boxY + 1, 0, true);

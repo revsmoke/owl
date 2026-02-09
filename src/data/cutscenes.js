@@ -26,25 +26,31 @@ const cy = () => window.innerHeight / 2;
 const dramaticDeath = (score) => [
     { type: 'spawn', id: 'owlie', x: cx(), y: cy(), sprite: OWLIE_SPRITE, color: '#ffffff' },
     { type: 'vignette', intensity: 0.6 },
-    { type: 'parallel', actions: [
-        { type: 'shake', intensity: 8, duration: 1.0 },
-        { type: 'flash', color: '#ff0000', duration: 0.5 },
-        { type: 'typeText', content: 'The battlefield falls silent...', y: 5, color: '#ff3333', speed: 12, centered: true, duration: 2.0 }
-    ], duration: 2.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'shake', intensity: 8, duration: 1.0 },
+            { type: 'flash', color: '#ff0000', duration: 0.5 },
+            { type: 'typeText', content: 'The battlefield falls silent...', y: 5, color: '#ff3333', speed: 12, centered: true, duration: 2.0 }
+        ], duration: 2.0
+    },
     { type: 'setSprite', id: 'owlie', sprite: DEFEATED_OWLIE },
     { type: 'wait', duration: 1.0 },
-    { type: 'parallel', actions: [
-        { type: 'typeText', content: 'A warm light breaks through the darkness.', y: 5, color: '#ffff33', speed: 15, centered: true, duration: 2.5 },
-        { type: 'flash', color: '#ffffff', duration: 0.3 }
-    ], duration: 2.5 },
+    {
+        type: 'parallel', actions: [
+            { type: 'typeText', content: 'A warm light breaks through the darkness.', y: 5, color: '#ffff33', speed: 15, centered: true, duration: 2.5 },
+            { type: 'flash', color: '#ffffff', duration: 0.3 }
+        ], duration: 2.5
+    },
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
-    { type: 'parallel', actions: [
-        { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 4.0, easing: 'easeOutCubic' },
-        { type: 'typeText', content: 'Owlie ascends to the eternal sky...', y: 8, color: '#33ffff', speed: 10, centered: true, glow: true, duration: 3.0 }
-    ], duration: 4.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 4.0, easing: 'easeOutCubic' },
+            { type: 'typeText', content: 'Owlie ascends to the eternal sky...', y: 8, color: '#33ffff', speed: 10, centered: true, glow: true, duration: 3.0 }
+        ], duration: 4.0
+    },
     { type: 'clearText' },
     { type: 'vignette', intensity: 0 },
-    { type: 'typeText', content: `SCORE: ${score}`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 999 },
+    { type: 'typeText', content: `SCORE: ${score}`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 1.5 },
     { type: 'end' }
 ];
 
@@ -65,7 +71,7 @@ const comedyDeath = (score) => [
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
     { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 2.5, easing: 'easeInQuad' },
     { type: 'clearText' },
-    { type: 'typeText', content: `RETIRED WITH ${score} POINTS`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 999 },
+    { type: 'typeText', content: `RETIRED WITH ${score} POINTS`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 1.5 },
     { type: 'end' }
 ];
 
@@ -73,25 +79,31 @@ const comedyDeath = (score) => [
 const epicDeath = (score) => [
     { type: 'spawn', id: 'owlie', x: cx(), y: cy(), sprite: OWLIE_SPRITE, color: '#ffffff' },
     { type: 'vignette', intensity: 0.8 },
-    { type: 'parallel', actions: [
-        { type: 'shake', intensity: 12, duration: 1.5 },
-        { type: 'typeText', content: 'THE END DRAWS NEAR...', y: 3, color: '#ff3333', speed: 8, centered: true, glow: true, duration: 2.0 }
-    ], duration: 2.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'shake', intensity: 12, duration: 1.5 },
+            { type: 'typeText', content: 'THE END DRAWS NEAR...', y: 3, color: '#ff3333', speed: 8, centered: true, glow: true, duration: 2.0 }
+        ], duration: 2.0
+    },
     { type: 'setSprite', id: 'owlie', sprite: DEFEATED_OWLIE },
     { type: 'wait', duration: 1.5 },
-    { type: 'parallel', actions: [
-        { type: 'flash', color: '#ffffff', duration: 1.0 },
-        { type: 'typeText', content: 'BUT LEGENDS NEVER TRULY DIE.', y: 5, color: '#ffff33', speed: 10, centered: true, glow: true, duration: 2.5 }
-    ], duration: 2.5 },
+    {
+        type: 'parallel', actions: [
+            { type: 'flash', color: '#ffffff', duration: 1.0 },
+            { type: 'typeText', content: 'BUT LEGENDS NEVER TRULY DIE.', y: 5, color: '#ffff33', speed: 10, centered: true, glow: true, duration: 2.5 }
+        ], duration: 2.5
+    },
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
-    { type: 'parallel', actions: [
-        { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 5.0, easing: 'easeOutCubic' },
-        { type: 'typeText', content: 'Owlie joins the stars above...', y: 8, color: '#aaddff', speed: 8, centered: true, glow: true, duration: 4.0 },
-        { type: 'fadeActor', id: 'owlie', targetOpacity: 0.3, duration: 5.0 }
-    ], duration: 5.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 5.0, easing: 'easeOutCubic' },
+            { type: 'typeText', content: 'Owlie joins the stars above...', y: 8, color: '#aaddff', speed: 8, centered: true, glow: true, duration: 4.0 },
+            { type: 'fadeActor', id: 'owlie', targetOpacity: 0.3, duration: 5.0 }
+        ], duration: 5.0
+    },
     { type: 'clearText' },
     { type: 'vignette', intensity: 0 },
-    { type: 'typeText', content: `LEGENDARY SCORE: ${score}`, y: 12, color: '#ffff33', speed: 15, centered: true, glow: true, duration: 999 },
+    { type: 'typeText', content: `LEGENDARY SCORE: ${score}`, y: 12, color: '#ffff33', speed: 15, centered: true, glow: true, duration: 2.0 },
     { type: 'end' }
 ];
 
@@ -104,13 +116,15 @@ const quietDeath = (score) => [
     { type: 'typeText', content: 'Owlie is tired.', y: 5, color: '#8888aa', speed: 8, centered: true, duration: 3.0 },
     { type: 'typeText', content: 'The night is long and peaceful.', y: 7, color: '#8888aa', speed: 8, centered: true, duration: 3.0 },
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
-    { type: 'parallel', actions: [
-        { type: 'move', id: 'owlie', targetX: cx(), targetY: -80, duration: 6.0, easing: 'easeOutQuad' },
-        { type: 'fadeActor', id: 'owlie', targetOpacity: 0, duration: 6.0, easing: 'easeInCubic' }
-    ], duration: 6.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'move', id: 'owlie', targetX: cx(), targetY: -80, duration: 6.0, easing: 'easeOutQuad' },
+            { type: 'fadeActor', id: 'owlie', targetOpacity: 0, duration: 6.0, easing: 'easeInCubic' }
+        ], duration: 6.0
+    },
     { type: 'clearText' },
     { type: 'typeText', content: 'Goodnight, Owlie.', y: 10, color: '#aaaacc', speed: 6, centered: true, duration: 3.0 },
-    { type: 'typeText', content: `Score: ${score}`, y: 13, color: '#666688', speed: 15, centered: true, duration: 999 },
+    { type: 'typeText', content: `Score: ${score}`, y: 13, color: '#666688', speed: 15, centered: true, duration: 2.0 },
     { type: 'end' }
 ];
 
@@ -118,17 +132,19 @@ const quietDeath = (score) => [
 const classicDeath = (score) => [
     { type: 'spawn', id: 'owlie', x: cx(), y: cy(), sprite: OWLIE_SPRITE, color: '#ffffff' },
     { type: 'typeText', content: 'Owlie: "Tell my wife... I love... worms."', y: 5, color: '#ffffff', speed: 20, centered: true, duration: 2.5 },
-    { type: 'parallel', actions: [
-        { type: 'shake', intensity: 2, duration: 0.5 },
-        { type: 'typeText', content: 'Wait, owls eat mice, not worms!', y: 7, color: '#ff3333', speed: 25, centered: true, duration: 2.0 }
-    ], duration: 2.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'shake', intensity: 2, duration: 0.5 },
+            { type: 'typeText', content: 'Wait, owls eat mice, not worms!', y: 7, color: '#ff3333', speed: 25, centered: true, duration: 2.0 }
+        ], duration: 2.0
+    },
     { type: 'setSprite', id: 'owlie', sprite: DIZZY_OWLIE },
     { type: 'typeText', content: 'Embarrassed, Owlie leaves for the sky.', y: 5, color: '#aaaaaa', speed: 18, centered: true, duration: 2.5 },
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
     { type: 'flash', color: '#ffffff', duration: 0.2 },
     { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 3.0, easing: 'easeOutCubic' },
     { type: 'clearText' },
-    { type: 'typeText', content: `SCORE: ${score}`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 999 },
+    { type: 'typeText', content: `SCORE: ${score}`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 1.5 },
     { type: 'end' }
 ];
 
@@ -139,12 +155,14 @@ const bedtimeDeath = (score) => [
     { type: 'typeText', content: 'Owl Heaven has free mice!', y: 7, color: '#33ff33', speed: 22, centered: true, glow: true, duration: 2.0 },
     { type: 'setSprite', id: 'owlie', sprite: ANGEL_OWLIE },
     { type: 'flash', color: '#33ffff', duration: 0.3 },
-    { type: 'parallel', actions: [
-        { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 4.0, easing: 'easeOutQuad' },
-        { type: 'typeText', content: 'Off to paradise...', y: 9, color: '#33ffff', speed: 10, centered: true, glow: true, duration: 3.0 }
-    ], duration: 4.0 },
+    {
+        type: 'parallel', actions: [
+            { type: 'move', id: 'owlie', targetX: cx(), targetY: -100, duration: 4.0, easing: 'easeOutQuad' },
+            { type: 'typeText', content: 'Off to paradise...', y: 9, color: '#33ffff', speed: 10, centered: true, glow: true, duration: 3.0 }
+        ], duration: 4.0
+    },
     { type: 'clearText' },
-    { type: 'typeText', content: `RETIRED WITH ${score} POINTS`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 999 },
+    { type: 'typeText', content: `RETIRED WITH ${score} POINTS`, y: 12, color: '#33ff33', speed: 20, centered: true, duration: 1.5 },
     { type: 'end' }
 ];
 

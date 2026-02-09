@@ -304,6 +304,15 @@ export class CutsceneManager {
         // Draw text overlays
         this.textOverlay.draw(this.renderer);
 
+        // Draw skip indicator if active for > 0.5s
+        if (this.isActive && this.stepIndex < this.currentScript.length - 1) {
+            // We use a simple modulo for a flicker effect
+            const skipVisible = Math.floor(performance.now() / 500) % 2 === 0;
+            if (skipVisible) {
+                this.renderer.drawTextCentered('PRESS ANY KEY TO SKIP', this.renderer.rows - 2, '#333333', false, 0.4);
+            }
+        }
+
         // Draw screen effects (always last)
         this.screenEffects.draw(ctx, window.innerWidth, window.innerHeight);
     }

@@ -11,12 +11,7 @@ export class Renderer {
 
         // Adaptive font sizing — target ~60 columns
         this.fontSize = this._calcFontSize();
-
-        // Measure character dimensions
-        this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
-        const metrics = this.ctx.measureText('M');
-        this.charWidth = metrics.width;
-        this.charHeight = this.fontSize * 1.2;
+        this.metricsCache = new Map();
 
         this.resize();
         window.addEventListener('resize', () => this.resize());
@@ -24,19 +19,24 @@ export class Renderer {
 
     _calcFontSize() {
         const target = Math.floor(window.innerWidth / 60);
-        return Math.max(10, Math.min(20, target));
+        return Math.max(12, Math.min(22, target));
     }
 
     resize() {
         this.fontSize = this._calcFontSize();
         this.ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+
+        // Cache metrics for the current font size
         const metrics = this.ctx.measureText('M');
         this.charWidth = metrics.width;
-        this.charHeight = this.fontSize * 1.2;
+        this.charHeight = Math.ceil(this.fontSize * 1.2);
 
-        this.canvas.width = window.innerWidth * window.devicePixelRatio;
-        this.canvas.height = window.innerHeight * window.devicePixelRatio;
-        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = window.innerWidth * dpr;
+        this.canvas.height = window.innerHeight * dpr;
+
+        this.ctx.resetTransform();
+        this.ctx.scale(dpr, dpr);
 
         this.cols = Math.floor(window.innerWidth / this.charWidth);
         this.rows = Math.floor(window.innerHeight / this.charHeight);
@@ -63,7 +63,9 @@ export class Renderer {
 
         const lines = text.split('\n');
         lines.forEach((line, i) => {
-            this.ctx.fillText(line, x * this.charWidth, (y + i + 1) * this.charHeight);
+            const drawX = Math.round(x * this.charWidth);
+            const drawY = Math.round((y + i + 1) * this.charHeight);
+            this.ctx.fillText(line, drawX, drawY);
         });
 
         this.ctx.restore();
@@ -86,11 +88,11 @@ export class Renderer {
      */
     drawBox(x, y, width, height, color = '#33ff33', style = 'single') {
         const chars = {
-            single:  { tl: '\u250C', tr: '\u2510', bl: '\u2514', br: '\u2518', h: '\u2500', v: '\u2502' },
-            double:  { tl: '\u2554', tr: '\u2557', bl: '\u255A', br: '\u255D', h: '\u2550', v: '\u2551' },
-            heavy:   { tl: '\u250F', tr: '\u2513', bl: '\u2517', br: '\u251B', h: '\u2501', v: '\u2503' },
+            single: { tl: '\u250C', tr: '\u2510', bl: '\u2514', br: '\u2518', h: '\u2500', v: '\u2502' },
+            double: { tl: '\u2554', tr: '\u2557', bl: '\u255A', br: '\u255D', h: '\u2550', v: '\u2551' },
+            heavy: { tl: '\u250F', tr: '\u2513', bl: '\u2517', br: '\u251B', h: '\u2501', v: '\u2503' },
             rounded: { tl: '\u256D', tr: '\u256E', bl: '\u2570', br: '\u256F', h: '\u2500', v: '\u2502' },
-            ascii:   { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
+            ascii: { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
         };
         const c = chars[style] || chars.single;
 
@@ -114,11 +116,11 @@ export class Renderer {
      */
     drawBoxWithTitle(x, y, width, height, title, color = '#33ff33', style = 'single') {
         const chars = {
-            single:  { tl: '\u250C', tr: '\u2510', bl: '\u2514', br: '\u2518', h: '\u2500', v: '\u2502' },
-            double:  { tl: '\u2554', tr: '\u2557', bl: '\u255A', br: '\u255D', h: '\u2550', v: '\u2551' },
-            heavy:   { tl: '\u250F', tr: '\u2513', bl: '\u2517', br: '\u251B', h: '\u2501', v: '\u2503' },
+            single: { tl: '\u250C', tr: '\u2510', bl: '\u2514', br: '\u2518', h: '\u2500', v: '\u2502' },
+            double: { tl: '\u2554', tr: '\u2557', bl: '\u255A', br: '\u255D', h: '\u2550', v: '\u2551' },
+            heavy: { tl: '\u250F', tr: '\u2513', bl: '\u2517', br: '\u251B', h: '\u2501', v: '\u2503' },
             rounded: { tl: '\u256D', tr: '\u256E', bl: '\u2570', br: '\u256F', h: '\u2500', v: '\u2502' },
-            ascii:   { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
+            ascii: { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' }
         };
         const c = chars[style] || chars.single;
 
